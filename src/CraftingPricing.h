@@ -165,7 +165,7 @@ private:
         return price;
     }
 
-    static double Yield(Recipe const& recipe)
+    static double GetYield(Recipe const& recipe)
     {
         return recipe.expected > 0 ? recipe.expected : recipe.output;
     }
@@ -186,7 +186,7 @@ private:
             double cost = 0;
             for (auto const& material : recipe.materials)
                 cost += Acquire(material.item) * material.count;
-            best = std::min(best, cost / Yield(recipe));
+            best = std::min(best, cost / GetYield(recipe));
         }
         acquire[id] = best;
         return best;
@@ -206,7 +206,7 @@ private:
             for (auto const& material : recipe.materials)
                 cost += items.count(material.item) ? Acquire(material.item) * material.count
                     : std::numeric_limits<double>::infinity();
-            cheapest = std::min(cheapest, cost / Yield(recipe));
+            cheapest = std::min(cheapest, cost / GetYield(recipe));
         }
         if (!std::isfinite(cheapest))
             return -1;
