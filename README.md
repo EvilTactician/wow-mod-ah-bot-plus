@@ -1,4 +1,11 @@
-## Auction Bot Plus
+# Auction Bot Plus 1.1.0
+
+<div align="center">
+
+![WoW Version](https://img.shields.io/badge/WoW-3.3.5a-orange)
+[![Version](https://img.shields.io/badge/Version-1.1.0-green)](https://github.com/EvilTactician/wow-mod-ah-bot-plus)
+
+</div>
 
 This is a fork of the auction house bot for AzerothCore.  This fork gives a much more blizzlike experience in the offerings on the auction house, and it is built with the following ethos: "Maximum understandable customization in the hands of admins via non-SQL configurations".  Here are some of the feature highlights:
  - All configuration is done via config files, with no SQL configuration needed
@@ -18,7 +25,7 @@ Requires an AzerothCore version that is caught up to at least change set 3f46e05
 Run this inside your AzerothCore source's `modules/` directory (the repo is `wow-mod-ah-bot-plus`, the module folder is `mod-ah-bot-plus`):
 
 ```
-git clone https://github.com/buildthehomelab/wow-mod-ah-bot-plus.git mod-ah-bot-plus
+git clone https://github.com/EvilTactician/wow-mod-ah-bot-plus.git mod-ah-bot-plus
 ```
 
 Then re-run cmake and launch a clean build of AzerothCore.
