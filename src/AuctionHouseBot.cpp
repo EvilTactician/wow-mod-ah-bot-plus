@@ -1397,14 +1397,15 @@ bool AuctionHouseBot::BisDailyAllows(uint32 house, uint32 item, uint32 units) co
         time(nullptr) / DAY, units, ProgressionBuyerDailyLimit);
 }
 
-// Profession materials and crafts the seller never lists (a ListProportion of 0, or
-// MaterialStock off) still get a quote, so crafting prices and the reference buyer know them.
-// What the bot leaves out on purpose stays out: bound, conjured, timed, disabled items.
+// Profession materials and crafts the seller never lists (a ListProportion of 0, the random
+// pool's DisabledInvalidItemIDs such as raw fish and Simple Flour, or MaterialStock off) still
+// get a quote, so crafting prices and the reference buyer know them. As with MaterialStock,
+// MaterialStock.ExcludedItemIDs leaves one out; bound, conjured and timed items stay out.
 bool AuctionHouseBot::IsQuoteOnlyItem(uint32 item)
 {
     if (!CraftedPricingReady)
         PopulateCraftedPricing();
-    if (!CraftedQuoteItems.count(item) || DisabledItems.count(item))
+    if (!CraftedQuoteItems.count(item) || MaterialStockExcludedItems.count(item))
         return false;
     auto proto = sObjectMgr->GetItemTemplate(item);
     return proto && proto->Bonding != BIND_WHEN_PICKED_UP && proto->Bonding != BIND_QUEST_ITEM

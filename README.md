@@ -1,9 +1,9 @@
-# Auction Bot Plus 1.1.0
+# Auction Bot Plus 1.1.1
 
 <div align="center">
 
 ![WoW Version](https://img.shields.io/badge/WoW-3.3.5a-orange)
-[![Version](https://img.shields.io/badge/Version-1.1.0-green)](https://github.com/EvilTactician/wow-mod-ah-bot-plus)
+[![Version](https://img.shields.io/badge/Version-1.1.1-green)](https://github.com/EvilTactician/wow-mod-ah-bot-plus)
 
 </div>
 
@@ -309,8 +309,9 @@ pricing) is seller only, so without this the buyer offers the bare category form
 hundreds of times what the bot will pay for it. `AuctionHouseBot.Buyer.ReferencePricing.Enabled
 = true` makes the buyer offer floor(`MarketPercent`% of the buyer reference) per unit for every
 item the seller quotes. BiS items keep their own percent. Every profession material and craft
-gets a quote, even one the seller never lists (a ListProportion of 0, MaterialStock off), unless it
-binds, is conjured or timed, or is disabled by item ID. Other items the seller never lists (no
+gets a quote, even one the seller never lists (a ListProportion of 0, the random pool's
+DisabledInvalidItemIDs such as raw fish and Simple Flour, MaterialStock off), unless it binds, is
+conjured or timed, or is in `MaterialStock.ExcludedItemIDs`. Other items the seller never lists (no
 seller quote) stay on the legacy buyer. Needs `EnableSeller`, `Seller.StablePrices` and an
 active buyer; a house the seller doesn't stock (MaxItems 0) has no quotes. AcceptablePriceModifier
 is not applied.
