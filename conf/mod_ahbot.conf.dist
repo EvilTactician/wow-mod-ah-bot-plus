@@ -81,7 +81,8 @@ AuctionHouseBot.ItemsPerCycle = 150
 
 # Material supply: actual consumed profession ingredients and vellum, per enabled
 # house. Bound, conjured, temporary and missing items remain excluded and logged.
-# The dedicated catalog bypasses random-pool exclusions; use ExcludedItemIDs here.
+# The dedicated catalog (like the quote every profession material gets) bypasses random-pool
+# exclusions such as raw fish in DisabledInvalidItemIDs; use ExcludedItemIDs here.
 # Managed materials never enter random filling. Existing listings are not removed.
 # Each low-stock material starts a batch that continues to RefillUnits across cycles.
 # Ordinary reserve listings contain <=20 and respect lower template/config caps.

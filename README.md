@@ -1,4 +1,11 @@
-## Auction Bot Plus
+# Auction Bot Plus 1.1.1
+
+<div align="center">
+
+![WoW Version](https://img.shields.io/badge/WoW-3.3.5a-orange)
+[![Version](https://img.shields.io/badge/Version-1.1.1-green)](https://github.com/EvilTactician/wow-mod-ah-bot-plus)
+
+</div>
 
 This is a fork of the auction house bot for AzerothCore.  This fork gives a much more blizzlike experience in the offerings on the auction house, and it is built with the following ethos: "Maximum understandable customization in the hands of admins via non-SQL configurations".  Here are some of the feature highlights:
  - All configuration is done via config files, with no SQL configuration needed
@@ -18,7 +25,7 @@ Requires an AzerothCore version that is caught up to at least change set 3f46e05
 Run this inside your AzerothCore source's `modules/` directory (the repo is `wow-mod-ah-bot-plus`, the module folder is `mod-ah-bot-plus`):
 
 ```
-git clone https://github.com/buildthehomelab/wow-mod-ah-bot-plus.git mod-ah-bot-plus
+git clone https://github.com/EvilTactician/wow-mod-ah-bot-plus.git mod-ah-bot-plus
 ```
 
 Then re-run cmake and launch a clean build of AzerothCore.
@@ -301,7 +308,10 @@ Every seller floor (crafting, vendor, disenchant, epic gear, glyph, ammo, recipe
 pricing) is seller only, so without this the buyer offers the bare category formula: a crafted item can list at
 hundreds of times what the bot will pay for it. `AuctionHouseBot.Buyer.ReferencePricing.Enabled
 = true` makes the buyer offer floor(`MarketPercent`% of the buyer reference) per unit for every
-item the seller quotes. BiS items keep their own percent. Items the seller never lists (no
+item the seller quotes. BiS items keep their own percent. Every profession material and craft
+gets a quote, even one the seller never lists (a ListProportion of 0, the random pool's
+DisabledInvalidItemIDs such as raw fish and Simple Flour, MaterialStock off), unless it binds, is
+conjured or timed, or is in `MaterialStock.ExcludedItemIDs`. Other items the seller never lists (no
 seller quote) stay on the legacy buyer. Needs `EnableSeller`, `Seller.StablePrices` and an
 active buyer; a house the seller doesn't stock (MaxItems 0) has no quotes. AcceptablePriceModifier
 is not applied.
@@ -310,8 +320,8 @@ The buyer reference is the seller quote, except for anything with a recipe (prof
 item-use combines such as Darkmoon decks or motes into primals): those count at most what one
 unit costs to make, plus the 15% crafting margin and the auction cut. That cost takes the
 cheapest of the bot reference, an NPC's gold price and crafting each ingredient, at average
-yield (die rolls and specialization extras from `skill_extra_item_template`, assuming every
-specialization is known). Seller-only floors (epic gear, glyphs) never reach the buyer for
+yield (die rolls only: the extras an alchemy mastery makes, from `skill_extra_item_template`,
+aren't counted, since a crafter has at most one, so a master earns more than the margin). Seller-only floors (epic gear, glyphs) never reach the buyer for
 craftable items, and the BiS demand premium only through the capped BiS buyer (see BiS buyer
 pricing). Crafts the seller floors (`CraftedPricing`; not materials that are also gathered,
 whose bot bids can sit below the cost basis) get their own share, `CraftedMarketPercent`
@@ -321,8 +331,10 @@ craft to the bot earns the crafting margin: 15% over its ingredients' cost after
 (BiS crafts add their premium, under a daily limit). Items without a recipe use
 `MarketPercent` (default 80). The offer also never exceeds `MarketPercent`% of what an NPC charges for the item, and pricing-error stacks
 never list below the buyer's offer, so neither can be flipped to the bot.
-PreventOverpayingForVendorItems still applies when set. Items sold only for tokens are not capped:
-a token-vendor epic sells to the bot like a drop.
+Since that NPC cap already stops vendor flipping, PreventOverpayingForVendorItems (paying no more
+than a vendor gives) only applies to reference offers for items a vendor sells for something other
+than gold. Items sold only for tokens are not capped: a token-vendor epic sells to the bot like a
+drop.
 
 ## Crafting material supply
 

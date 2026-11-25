@@ -741,17 +741,6 @@ void AuctionHouseBot::PopulateCraftedPricing()
         } while (bagVendors->NextRow());
     }
 
-    // Specialization extras (spell -> chance %, most extra casts' worth), for average yields.
-    std::unordered_map<uint32, std::pair<float, int32>> extraItems;
-    if (QueryResult extra = WorldDatabase.Query("SELECT spellId, additionalCreateChance, additionalMaxNum FROM skill_extra_item_template"))
-    {
-        do
-        {
-            Field* fields = extra->Fetch();
-            extraItems[fields[0].Get<uint32>()] = {fields[1].Get<float>(), fields[2].Get<int32>()};
-        } while (extra->NextRow());
-    }
-
     std::vector<ItemTemplate const*> vellums;
     // Item-use combines (Darkmoon cards into a deck, motes into a primal) are recipes too.
     std::unordered_set<uint32> combines;
@@ -807,10 +796,9 @@ void AuctionHouseBot::PopulateCraftedPricing()
         bool scroll = create->Effect == SPELL_EFFECT_ENCHANT_ITEM;
         // An enchant effect's points are the enchant bonus, not a scroll batch count.
         recipe.output = AhBotPricing::GuaranteedOutput(scroll, create->BasePoints, create->DieSides, output->GetMaxStackSize());
-        // Every specialization is assumed known (mod-profession-specializations teaches them all).
-        auto extra = extraItems.find(spellId);
-        recipe.expected = AhBotPricing::ExpectedOutput(scroll, create->BasePoints, create->DieSides, output->GetMaxStackSize(),
-            extra == extraItems.end() ? 0 : extra->second.first, extra == extraItems.end() ? 0 : extra->second.second);
+        // Alchemy masteries' extras (skill_extra_item_template) aren't counted: a crafter has at
+        // most one of them, so the buyer pays everyone the margin and a master makes extra on top.
+        recipe.expected = AhBotPricing::ExpectedOutput(scroll, create->BasePoints, create->DieSides, output->GetMaxStackSize(), 0, 0);
         for (uint32 slot = 0; slot < MAX_SPELL_REAGENTS; ++slot)
         {
             if (spell->Reagent[slot] <= 0 || spell->ReagentCount[slot] <= 0)
@@ -1043,6 +1031,15 @@ void AuctionHouseBot::PopulateCraftedPricing()
         for (auto const& entry : AhBotPricing::ProgressionBis)
             if (sObjectMgr->GetItemTemplate(entry.item))
                 model.items.try_emplace(entry.item);
+    // What recipes make and use, for quotes on items the seller doesn't list (IsQuoteOnlyItem).
+    CraftedQuoteItems.clear();
+    for (auto const& [id, item] : model.items)
+        for (auto const& recipe : item.recipes)
+        {
+            CraftedQuoteItems.insert(id);
+            for (auto const& material : recipe.materials)
+                CraftedQuoteItems.insert(material.item);
+        }
     for (auto& [id, item] : model.items)
     {
         auto proto = sObjectMgr->GetItemTemplate(id);
@@ -1233,8 +1230,10 @@ bool AuctionHouseBot::GetReferenceBuyerOffer(uint32 item, uint32 house, std::uin
     uint32 percent = bis ? ProgressionBuyerMarketPercent
         : crafted ? ReferenceBuyerCraftedMarketPercent : ReferenceBuyerMarketPercent;
     offer = AhBotPricing::ReferenceBuyerOffer(reference, percent, npc == VendorPurchasePrices.end() ? 0 : npc->second);
+    // The NPC gold price cap above already keeps vendor flipping from paying; only items a vendor
+    // sells for something else (tokens) fall back to what a vendor gives for them.
     uint32 vendor = item < vendorItemsPrices.size() ? vendorItemsPrices[item] : UINT32_MAX;
-    if (PreventOverpayingForVendorItems && vendor > 0 && vendor != UINT32_MAX)
+    if (PreventOverpayingForVendorItems && vendor > 0 && vendor != UINT32_MAX && npc == VendorPurchasePrices.end())
         offer = std::min<std::uint64_t>(offer, vendor);
     return true;
 }
@@ -1398,10 +1397,26 @@ bool AuctionHouseBot::BisDailyAllows(uint32 house, uint32 item, uint32 units) co
         time(nullptr) / DAY, units, ProgressionBuyerDailyLimit);
 }
 
+// Profession materials and crafts the seller never lists (a ListProportion of 0, the random
+// pool's DisabledInvalidItemIDs such as raw fish and Simple Flour, or MaterialStock off) still
+// get a quote, so crafting prices and the reference buyer know them. As with MaterialStock,
+// MaterialStock.ExcludedItemIDs leaves one out; bound, conjured and timed items stay out.
+bool AuctionHouseBot::IsQuoteOnlyItem(uint32 item)
+{
+    if (!CraftedPricingReady)
+        PopulateCraftedPricing();
+    if (!CraftedQuoteItems.count(item) || MaterialStockExcludedItems.count(item))
+        return false;
+    auto proto = sObjectMgr->GetItemTemplate(item);
+    return proto && proto->Bonding != BIND_WHEN_PICKED_UP && proto->Bonding != BIND_QUEST_ITEM
+        && !proto->IsConjuredConsumable() && proto->Duration == 0 && proto->Quality < ITEM_QUALITY_ARTIFACT
+        && proto->Class != ITEM_CLASS_MONEY;
+}
+
 // The same deterministic seller path used for new listings, cached until config/candidates reload.
 uint64 AuctionHouseBot::GetSellerQuote(uint32 item, uint32 house)
 {
-    if (!StableSellerPrices || !SellingBotEnabled || !IsModuleEnabled() || !CatalogCandidates.count(item))
+    if (!StableSellerPrices || !SellingBotEnabled || !IsModuleEnabled() || (!CatalogCandidates.count(item) && !IsQuoteOnlyItem(item)))
         return 0;
     if ((house == 2 && AllianceConfig.GetMaxItems() == 0)
         || (house == 6 && HordeConfig.GetMaxItems() == 0)
@@ -2809,6 +2824,9 @@ void AuctionHouseBot::AddNewAuctionBuyerBotBid(std::vector<Player*> AHBPlayers, 
         // price table was built) get UINT32_MAX, which behaves the same as "not sold by a vendor"
         bool preventedOverpayingForVendorItem = false;
         uint32 vendorSellPrice = prototype->ItemId < vendorItemsPrices.size() ? vendorItemsPrices[prototype->ItemId] : UINT32_MAX;
+        // A reference offer is already capped below the NPC gold price (GetReferenceBuyerOffer).
+        if (referenceBuyer && VendorPurchasePrices.count(prototype->ItemId))
+            vendorSellPrice = UINT32_MAX;
         if (PreventOverpayingForVendorItems && vendorSellPrice > 0)
         {
             if (doBuyout && AhBotSafety::AboveVendorLimit(auction->buyout, vendorSellPrice, pItem->GetCount()))
