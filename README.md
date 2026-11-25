@@ -301,7 +301,9 @@ Every seller floor (crafting, vendor, disenchant, epic gear, glyph, ammo, recipe
 pricing) is seller only, so without this the buyer offers the bare category formula: a crafted item can list at
 hundreds of times what the bot will pay for it. `AuctionHouseBot.Buyer.ReferencePricing.Enabled
 = true` makes the buyer offer floor(`MarketPercent`% of the buyer reference) per unit for every
-item the seller quotes. BiS items keep their own percent. Items the seller never lists (no
+item the seller quotes. BiS items keep their own percent. Every profession material and craft
+gets a quote, even one the seller never lists (a ListProportion of 0, MaterialStock off), unless it
+binds, is conjured or timed, or is disabled by item ID. Other items the seller never lists (no
 seller quote) stay on the legacy buyer. Needs `EnableSeller`, `Seller.StablePrices` and an
 active buyer; a house the seller doesn't stock (MaxItems 0) has no quotes. AcceptablePriceModifier
 is not applied.
@@ -310,8 +312,8 @@ The buyer reference is the seller quote, except for anything with a recipe (prof
 item-use combines such as Darkmoon decks or motes into primals): those count at most what one
 unit costs to make, plus the 15% crafting margin and the auction cut. That cost takes the
 cheapest of the bot reference, an NPC's gold price and crafting each ingredient, at average
-yield (die rolls and specialization extras from `skill_extra_item_template`, assuming every
-specialization is known). Seller-only floors (epic gear, glyphs) never reach the buyer for
+yield (die rolls only: the extras an alchemy mastery makes, from `skill_extra_item_template`,
+aren't counted, since a crafter has at most one, so a master earns more than the margin). Seller-only floors (epic gear, glyphs) never reach the buyer for
 craftable items, and the BiS demand premium only through the capped BiS buyer (see BiS buyer
 pricing). Crafts the seller floors (`CraftedPricing`; not materials that are also gathered,
 whose bot bids can sit below the cost basis) get their own share, `CraftedMarketPercent`
@@ -321,8 +323,10 @@ craft to the bot earns the crafting margin: 15% over its ingredients' cost after
 (BiS crafts add their premium, under a daily limit). Items without a recipe use
 `MarketPercent` (default 80). The offer also never exceeds `MarketPercent`% of what an NPC charges for the item, and pricing-error stacks
 never list below the buyer's offer, so neither can be flipped to the bot.
-PreventOverpayingForVendorItems still applies when set. Items sold only for tokens are not capped:
-a token-vendor epic sells to the bot like a drop.
+Since that NPC cap already stops vendor flipping, PreventOverpayingForVendorItems (paying no more
+than a vendor gives) only applies to reference offers for items a vendor sells for something other
+than gold. Items sold only for tokens are not capped: a token-vendor epic sells to the bot like a
+drop.
 
 ## Crafting material supply
 

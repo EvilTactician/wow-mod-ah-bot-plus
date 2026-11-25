@@ -151,6 +151,7 @@ private:
     float CraftedPricingMargin = 0.15f;
     bool CraftedPricingReady = false;
     std::map<double, AhBotPricing::Model> CraftedPricingModels;
+    std::unordered_set<uint32> CraftedQuoteItems; // made or used by a priced recipe
     std::map<std::tuple<uint32, uint32, uint32>, double> VendorBagPurchasePrices;
     bool RecipePricingEnabled = false;
     uint32 RecipePricingPercent = 50;
@@ -444,6 +445,7 @@ private:
 public:
     std::vector<std::string> GetStatus();
     uint64 GetSellerQuote(uint32 item, uint32 house);
+    bool IsQuoteOnlyItem(uint32 item);
     bool GetReferenceBuyerOffer(uint32 item, uint32 house, std::uint64_t& offer, bool ignoreDailyLimit = false);
     uint64 GetBuyerReference(uint32 item, uint32 house, bool bisPremium = false, bool* crafted = nullptr);
     uint64 GetPricingErrorPrice(ItemTemplate const* proto, uint32 house);
